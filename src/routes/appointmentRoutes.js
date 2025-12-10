@@ -40,9 +40,16 @@ router.post("/", async (req, res) => {
 });
 
 // Get all appointments
-router.get("/", async (req, res) => {
+router.get("/", auth(["DOCTOR", "STAFF"]), async (req, res) => {
   try {
-    const appointments = await Appointment.find()
+    let filter = {};
+
+    // If user is a DOCTOR → show only their appointments
+    if (req.user.role === "DOCTOR") {
+      filter.doctor = req.user.doctor; // doctor._id stored in token
+    }
+
+    const appointments = await Appointment.find(filter)
       .populate("patient", "fullName whatsappNumber")
       .populate("doctor", "name specialization")
       .sort({ appointmentDate: 1 });
@@ -55,7 +62,7 @@ router.get("/", async (req, res) => {
 });
 
 // Updatde status (Doctor only)
-router.patch("/:id/status", auth(["DOCTOR"]), async (req, res) => {
+router.patch("/:id/status", auth(["DOCTOR","STAFF"]), async (req, res) => {
   try {
     const { id } = req.params;
     const { status, notes } = req.body;
